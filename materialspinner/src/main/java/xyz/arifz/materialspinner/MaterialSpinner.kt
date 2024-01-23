@@ -16,6 +16,7 @@ import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
+import android.widget.AdapterView.OnItemClickListener
 import android.widget.ArrayAdapter
 import android.widget.Filterable
 import android.widget.ListAdapter
@@ -33,8 +34,13 @@ class MaterialSpinner : TextInputLayout {
     private var isRequired = false
     private var isSearchable = false
     private var items = ArrayList<String>()
+
+    private var itemsList = listOf<SelectedItem>()
+    private var currentSelectedItem: SelectedItem? = null
+
     private var searchTitle: String? = null
     var onSearchSpinnerItemClickListener: OnSearchSpinnerItemClickListener? = null
+    var onSelectedItemClickListener: OnSelectedItemClickListener? = null
 
     init {
         setupTheme()
@@ -64,6 +70,7 @@ class MaterialSpinner : TextInputLayout {
         setupView(context)
         setupAttributes(context, attrs)
         initWatchers()
+        initListeners()
     }
 
     private fun setupTheme() {
@@ -179,6 +186,14 @@ class MaterialSpinner : TextInputLayout {
         } else autoCompleteTextView.showDropDown()
     }
 
+    private fun initListeners() {
+        autoCompleteTextView.onItemClickListener =
+            OnItemClickListener { _, _, position, _ ->
+                currentSelectedItem = itemsList.getOrNull(position)
+                currentSelectedItem?.let { onSelectedItemClickListener?.onItemClick(it) }
+            }
+    }
+
     private fun initWatchers() {
         autoCompleteTextView.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {}
@@ -203,6 +218,41 @@ class MaterialSpinner : TextInputLayout {
         else setAdapter(ArrayAdapter(context, R.layout.support_simple_spinner_dropdown_item, items))
     }
 
+    /**
+     * Sets the list of items for the AutoCompleteTextView.
+     *
+     * @param itemsMap A map where:
+     *   - First `String?` are representing item IDs or KEYs.
+     *   - Second `String?` are representing item NAME or VALUE.
+     *
+     * Example: If you have list of object you can pass map like this:
+     * ```kotlin
+     * val countryList = listOf(
+     *     Country("1", "Bangladesh"),
+     *     Country("2", "Turkey"),
+     *     // ...
+     * )
+     * val itemsMap = countryList.associate { it.id to it.name }
+     * setItems(itemsMap)
+     * ```
+     */
+    fun setItems(itemsMap: Map<String?, String?>) {
+        if (isSearchable) {
+            this.items = itemsMap.map { it.value ?: "" }.toList() as ArrayList<String>
+        } else {
+            itemsList = itemsMap.map {
+                SelectedItem(it.key, it.value)
+            }.toList()
+            setAdapter(
+                ArrayAdapter(
+                    context,
+                    R.layout.support_simple_spinner_dropdown_item,
+                    itemsMap.map { it.value ?: "" })
+            )
+        }
+    }
+
+
     fun setSelection(position: Int) {
         try {
             autoCompleteTextView.setSelection(position)
@@ -211,9 +261,23 @@ class MaterialSpinner : TextInputLayout {
         }
     }
 
+    fun setSelection(keyOrId: String?) {
+        if (itemsList.isEmpty() || keyOrId.isNullOrEmpty()) {
+            return
+        }
+        try {
+            autoCompleteTextView.setSelection(itemsList.indexOfFirst { it.key == keyOrId })
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+
+    }
+
     fun clearSelection() {
         try {
-            autoCompleteTextView.setSelection(-1)
+            currentSelectedItem = null
+            autoCompleteTextView.clearListSelection()
             autoCompleteTextView.setText(null, false)
         } catch (e: Exception) {
             e.printStackTrace()
@@ -237,6 +301,9 @@ class MaterialSpinner : TextInputLayout {
         set(value) {
             autoCompleteTextView.setText(value, false)
         }
+
+    val selectedItem: SelectedItem?
+        get() = currentSelectedItem
 
     fun addTextChangedListener(watcher: TextWatcher) {
         autoCompleteTextView.addTextChangedListener(watcher)
@@ -331,6 +398,20 @@ class MaterialSpinner : TextInputLayout {
 
     fun onSearchSpinnerItemClickListener(listener: OnSearchSpinnerItemClickListener) {
         this.onSearchSpinnerItemClickListener = listener
+    }
+
+
+    /**
+     * OnSelectedItemClickListener for the MaterialSpinner.
+     *
+     * **Important:** To receive data from [OnSelectedItemClickListener], you must
+     *  set item using function **setItems(itemsMap: Map<String?, String?>)**. Otherwise, no data will be
+     * available from the listener.
+     *
+     *
+     */
+    fun onSelectedItemClickListener(listener: OnSelectedItemClickListener) {
+        this.onSelectedItemClickListener = listener
     }
 
 

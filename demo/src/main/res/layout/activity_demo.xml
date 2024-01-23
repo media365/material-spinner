@@ -15,10 +15,25 @@
         app:hint="This is hint"
         app:isRequired="true"
         app:isSearchable="true"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintVertical_chainStyle="packed"
+        app:layout_constraintBottom_toTopOf="@id/spinnerCountry"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <xyz.arifz.materialspinner.MaterialSpinner
+        android:id="@+id/spinnerCountry"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:fontSize="12"
+        app:hint="Select Country"
+        app:isRequired="true"
+        app:isSearchable="false"
+        android:layout_marginTop="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/spn" />
 
     <Button
         android:id="@+id/btn"
